@@ -83,6 +83,34 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
+
+  // TODO add "Lesson 7: 18. Augmentation Assignment 2"
+
+  // Sigma point generator from "Lesson 7: 15. Generating Sigma Points Assignment 2"
+  //set state dimension
+  int n_x = 5;
+
+  //define spreading parameter
+  double lambda = 3 - n_x;
+  
+  //create sigma point matrix
+  MatrixXd Xsig = MatrixXd(n_x, 2 * n_x + 1);
+
+  //calculate square root of P
+  MatrixXd A = P_.llt().matrixL();
+
+  //set first column of sigma point matrix
+  Xsig.col(0)  = x_;
+
+  //set remaining sigma points
+  const double center_distance = sqrt(lambda + n_x);
+  for (int i = 0; i < n_x; i++)
+  {
+    const auto center_offset = center_distance * A.col(i);
+    Xsig.col(i + 1)     = x_ + center_offset;
+    Xsig.col(i+1+n_x) = x_ - center_offset;
+  }
+
 }
 
 /**
