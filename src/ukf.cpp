@@ -235,6 +235,72 @@ void UKF::Prediction(double delta_t) {
     P = P + weights(i) * x_diff * x_diff.transpose() ;
   }
 
+  //
+  // PREDICT RADAR MEASUREMENT
+  //
+
+  // From "Lesson 7: 27. Predict Radar Measurement Assignment 2"
+
+  //set measurement dimension, radar can measure r, phi, and r_dot
+  int n_z = 3;
+
+  //radar measurement noise standard deviation radius in m
+  double std_radr = 0.3;
+
+  //radar measurement noise standard deviation angle in rad
+  double std_radphi = 0.0175;
+
+  //radar measurement noise standard deviation radius change in m/s
+  double std_radrd = 0.1;
+
+  //create matrix for sigma points in measurement space
+  MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug + 1);
+
+  //transform sigma points into measurement space
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 sigma points
+
+    // extract values for better readibility
+    double p_x = Xsig_pred(0,i);
+    double p_y = Xsig_pred(1,i);
+    double v  = Xsig_pred(2,i);
+    double yaw = Xsig_pred(3,i);
+
+    double v1 = cos(yaw)*v;
+    double v2 = sin(yaw)*v;
+
+    // measurement model
+    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
+    Zsig(1,i) = atan2(p_y,p_x);                                 //phi
+    Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
+  }
+
+  //mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);
+  z_pred.fill(0.0);
+  for (int i=0; i < 2*n_aug+1; i++) {
+    z_pred = z_pred + weights(i) * Zsig.col(i);
+  }
+
+  //innovation covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+  S.fill(0.0);
+  for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 sigma points
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+
+    //angle normalization
+    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+    S = S + weights(i) * z_diff * z_diff.transpose();
+  }
+
+  //add measurement noise covariance matrix
+  MatrixXd R = MatrixXd(n_z,n_z);
+  R <<    std_radr*std_radr, 0, 0,
+      0, std_radphi*std_radphi, 0,
+      0, 0,std_radrd*std_radrd;
+  S = S + R;
 
 
   //
@@ -244,6 +310,7 @@ void UKF::Prediction(double delta_t) {
   Xsig_pred_ = Xsig_pred;
   x_ = x;
   P_ = P;
+
 
 }
 
