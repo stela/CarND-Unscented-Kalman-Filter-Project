@@ -62,13 +62,80 @@ UKF::~UKF() {}
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
-void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
   /**
   TODO:
 
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+
+  //
+  // Initialization similar to EKF project
+  //
+
+  if (!is_initialized_) {
+    // first measurement
+    x_ = VectorXd(4);
+
+    if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
+      double ro = measurement_pack.raw_measurements_(0);
+      double theta = measurement_pack.raw_measurements_(1);
+      double ro_dot = measurement_pack.raw_measurements_(2);
+      long long ts = measurement_pack.timestamp_;
+      x_(0) = ro * cos(theta);
+      x_(1) = ro * sin(theta);
+      x_(2) = ro_dot * cos(theta);
+      x_(3) = ro_dot * sin(theta);
+
+      cout << "EKF: first measurement is RADAR" << endl << x_ << endl;
+    } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
+      double px = measurement_pack.raw_measurements_(0);
+      double py = measurement_pack.raw_measurements_(1);
+      long long ts = measurement_pack.timestamp_;
+      // Data set 1 has a Laser line first, contains these ground_truth values:
+      // x_groundtruth, y_groundtruth, vx_groundtruth, vy_groundtruth, yaw_groundtruth, yawrate_groundtruth
+      // 6.000000e-01,  6.000000e-01,  5.199937e+00,   0,              0,               6.911322e-03
+      // delta_t appears to be 100000 us (=0.1s) to the next (radar) measurement
+      // the RMSE will be very high for the first few measurements, but let's ignore those ;-)
+      x_(0) = px;
+      x_(1) = py;
+      x_(2) = 0.0;
+      x_(3) = 0.0;
+
+      cout << "EKF: first measurement is LASER" << endl << ekf_.x_ << endl;
+    }
+
+    // TODO assign to this.time_us_ ???
+    previous_t_ = measurement_pack.timestamp_;
+
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    return;
+  } // end !is_initialized
+
+
+  //
+  // Control structure similar to EKF project
+  //
+
+  // Prediction
+  double dt = (measurement_pack.timestamp_ - previous_t_) / 1000000.0;
+  Prediction(dt)
+
+  // Update
+  if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
+    // Radar updates
+    UpdateRadar(measurement_pack);
+  } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
+    // Laser updates
+    UpdateLidar(measurement_pack);
+  }
+  previous_t_ = measurement_pack.timestamp_;
+
+  // print the output
+  //cout << "x_ = " << ekf_.x_ << endl;
+
 }
 
 /**
