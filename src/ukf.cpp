@@ -12,17 +12,12 @@ using std::vector;
  * This is scaffolding, do not modify
  */
 UKF::UKF() {
-  // if this is false, laser measurements will be ignored (except during init)
-  use_laser_ = true;
-
-  // if this is false, radar measurements will be ignored (except during init)
-  use_radar_ = true;
-
   // initial state vector
   x_ = VectorXd(5);
 
   // initial covariance matrix
   P_ = MatrixXd(5, 5);
+  P_.setOnes();
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -88,7 +83,7 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
       x_(2) = ro_dot * cos(theta);
       x_(3) = ro_dot * sin(theta);
 
-      cout << "EKF: first measurement is RADAR" << endl << x_ << endl;
+      cout << "UKF: first measurement is RADAR" << endl << x_ << endl;
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       double px = measurement_pack.raw_measurements_(0);
       double py = measurement_pack.raw_measurements_(1);
@@ -103,7 +98,7 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
       x_(2) = 0.0;
       x_(3) = 0.0;
 
-      cout << "EKF: first measurement is LASER" << endl << x_ << endl;
+      cout << "UKF: first measurement is LASER" << endl << x_ << endl;
     }
 
     // TODO assign to this.time_us_ ???
@@ -130,12 +125,13 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
   } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
     // Laser updates
     UpdateLidar(measurement_pack);
+  } else {
+    cout << "UKF: WARNING! Unknown sensor " << measurement_pack.sensor_type_ << endl;
   }
   time_us_ = measurement_pack.timestamp_;
 
   // print the output
-  //cout << "x_ = " << ekf_.x_ << endl;
-
+  //cout << "x_ = " << x_ << endl;
 }
 
 /**
@@ -158,19 +154,15 @@ void UKF::Prediction(double delta_t) {
   // Sigma point generator from "Lesson 7: 15. Generating Sigma Points Assignment 2",
   // then expanded upon in Lesson 7: 18. Augmentation Assignment 2"
   //set state dimension
-  int n_x = 5;
+  const int n_x = 5;
 
   //set augmented dimension
-  int n_aug = 7;
-
-  //Process noise standard deviation longitudinal acceleration in m/s^2
-  double std_a = 0.2;
-
-  //Process noise standard deviation yaw acceleration in rad/s^2
-  double std_yawdd = 0.2;
+  const int n_aug = 7;
 
   //define spreading parameter
-  double lambda = 3 - n_x;
+  const double lambda = 3 - n_x;
+
+  // TODO continue reviewing Q&A from 16:00
 
   //create augmented mean vector
   VectorXd x_aug = VectorXd(7);
@@ -189,8 +181,8 @@ void UKF::Prediction(double delta_t) {
   //create augmented covariance matrix
   P_aug.fill(0.0);
   P_aug.topLeftCorner(5,5) = P_;
-  P_aug(5,5) = std_a*std_a;
-  P_aug(6,6) = std_yawdd*std_yawdd;
+  P_aug(5,5) = std_a_ * std_a_;
+  P_aug(6,6) = std_yawdd_ * std_yawdd_;
 
   //create square root matrix
   MatrixXd L = P_aug.llt().matrixL();
