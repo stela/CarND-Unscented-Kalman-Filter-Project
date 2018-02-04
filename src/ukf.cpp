@@ -103,11 +103,11 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
       x_(2) = 0.0;
       x_(3) = 0.0;
 
-      cout << "EKF: first measurement is LASER" << endl << ekf_.x_ << endl;
+      cout << "EKF: first measurement is LASER" << endl << x_ << endl;
     }
 
     // TODO assign to this.time_us_ ???
-    previous_t_ = measurement_pack.timestamp_;
+    time_us_ = measurement_pack.timestamp_;
 
     // done initializing, no need to predict or update
     is_initialized_ = true;
@@ -120,8 +120,8 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
   //
 
   // Prediction
-  double dt = (measurement_pack.timestamp_ - previous_t_) / 1000000.0;
-  Prediction(dt)
+  double dt = (measurement_pack.timestamp_ - time_us_) / 1000000.0;
+  Prediction(dt);
 
   // Update
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
@@ -131,7 +131,7 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
     // Laser updates
     UpdateLidar(measurement_pack);
   }
-  previous_t_ = measurement_pack.timestamp_;
+  time_us_ = measurement_pack.timestamp_;
 
   // print the output
   //cout << "x_ = " << ekf_.x_ << endl;
