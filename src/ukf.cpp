@@ -148,7 +148,7 @@ void UKF::Prediction(double delta_t) {
   */
 
   //
-  // SIGMA POINT GENERATION
+  // AUGMENTED SIGMA POINT GENERATION
   //
 
   // Sigma point generator from "Lesson 7: 15. Generating Sigma Points Assignment 2",
@@ -161,8 +161,6 @@ void UKF::Prediction(double delta_t) {
 
   //define spreading parameter
   const double lambda = 3 - n_x;
-
-  // TODO continue reviewing Q&A from 16:00
 
   //create augmented mean vector
   VectorXd x_aug = VectorXd(7);
@@ -200,7 +198,7 @@ void UKF::Prediction(double delta_t) {
   // SIGMA POINT PREDICTION
   //
 
-  // From "Lesson 7: Sigma Point Prediction Assignment 2":
+  // From "Lesson 7: 21. Sigma Point Prediction Assignment 2":
   //create matrix with predicted sigma points as columns
   MatrixXd Xsig_pred = MatrixXd(n_x, 2 * n_aug + 1);
 
@@ -295,7 +293,53 @@ void UKF::Prediction(double delta_t) {
   }
 
   //
-  // PREDICT RADAR MEASUREMENT
+  // ASSIGN OUTPUTS
+  //
+
+  // TODO add missing field updates
+  Xsig_pred_ = Xsig_pred;
+  x_ = x;
+  P_ = P;
+
+
+}
+
+/**
+ * Updates the state and the state covariance matrix using a laser measurement.
+ * @param {MeasurementPackage} meas_package
+ */
+void UKF::UpdateLidar(MeasurementPackage meas_package) {
+  /**
+  TODO:
+
+  Complete this function! Use lidar data to update the belief about the object's
+  position. Modify the state vector, x_, and covariance, P_.
+
+  You'll also need to calculate the lidar NIS.
+  */
+
+  // TODO Mapping from state space to Lidar is linear. Fill this out with appropriate update steps.
+  // TODO all linear, use plain KF equations here (like previous assignment?)
+
+  // TODO Lidar NIS
+}
+
+/**
+ * Updates the state and the state covariance matrix using a radar measurement.
+ * @param {MeasurementPackage} meas_package
+ */
+void UKF::UpdateRadar(MeasurementPackage meas_package) {
+  /**
+  TODO:
+
+  Complete this function! Use radar data to update the belief about the object's
+  position. Modify the state vector, x_, and covariance, P_.
+
+  You'll also need to calculate the radar NIS.
+  */
+
+  //
+  // PREDICT RADAR SIGMA POINTS
   //
 
   // From "Lesson 7: 27. Predict Radar Measurement Assignment 2"
@@ -360,50 +404,6 @@ void UKF::Prediction(double delta_t) {
       0, std_radphi*std_radphi, 0,
       0, 0,std_radrd*std_radrd;
   S = S + R;
-
-
-
-
-  //
-  // ASSIGN OUTPUTS
-  //
-
-  // TODO add missing field updates
-  Xsig_pred_ = Xsig_pred;
-  x_ = x;
-  P_ = P;
-
-
-}
-
-/**
- * Updates the state and the state covariance matrix using a laser measurement.
- * @param {MeasurementPackage} meas_package
- */
-void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use lidar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the lidar NIS.
-  */
-}
-
-/**
- * Updates the state and the state covariance matrix using a radar measurement.
- * @param {MeasurementPackage} meas_package
- */
-void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use radar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the radar NIS.
-  */
 
 
   //
