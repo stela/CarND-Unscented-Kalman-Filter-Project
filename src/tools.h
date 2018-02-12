@@ -24,6 +24,7 @@ public:
   */
   VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
 
+  MatrixXd max_rmse;
 };
 
 #endif /* TOOLS_H_ */
