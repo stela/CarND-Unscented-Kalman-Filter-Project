@@ -318,6 +318,12 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   You'll also need to calculate the lidar NIS.
   */
 
+  // Basic KF, no extended/UKF required (just like previous EKF project)
+  // See "Lesson 6: 13. Laser Measurements Part 4"
+  // but instead of H being 2x4, it's now 2x5 (append zeroes)
+  // Print out state + covariance to debug
+  // Do normalize all the angles (already done?)
+
   // TODO Mapping from state space to Lidar is linear. Fill this out with appropriate update steps.
   // TODO all linear, use plain KF equations here (like previous assignment?)
 
