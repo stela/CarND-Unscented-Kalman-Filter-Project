@@ -312,7 +312,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
   TODO:
 
-  Complete this function! Use lidar data to update the belief about the object's
+  Makes use of lidar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
 
   You'll also need to calculate the lidar NIS.
@@ -324,10 +324,68 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   // Print out state + covariance to debug
   // Do normalize all the angles (already done?)
 
-  // TODO Mapping from state space to Lidar is linear. Fill this out with appropriate update steps.
-  // TODO all linear, use plain KF equations here (like previous assignment?)
+  // laser measurement is 2D, store in vector for easier processing
+  const int n_z = 2
 
-  // TODO Lidar NIS
+  // transform the sigma points into measurement space
+  MatrixXd Zsig = Xsig_pred_.block(0, 0, n_z, n_sig_);
+
+  // mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z);
+  z_pred.fill(0.0);
+  for (int i=0; i < n_sig_; i++) {
+    z_pred = z_pred + weights_(i) * Zsig.col(i);
+  }
+
+  // measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+  S.fill(0.0);
+  for (int i = 0; i < n_sig_; i++) {  //2n+1 simga points
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+
+    // TODO normalize angle z_diff(1) here?
+
+    S = S + weights_(i) * z_diff * z_diff.transpose();
+  }
+
+  // add measurement noise covariance matrix
+  S = S + R_lidar_;
+
+  // 2. Update state
+  // TODO move z decl down to first use
+  // Incoming radar measurement
+  VectorXd z = meas_package.raw_measurements_;
+
+  // create matrix for cross correlation Tc
+  MatrixXd Tc = MatrixXd(n_x_, n_z);
+  Tc.fill(0.0);
+  for (int i = 0; i < n_sig_; i++) {  //2n+1 simga points
+
+    // residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+    // TODO normalize angle z_diff(1) here?
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    // TODO normalize angle __x_diff(3)__ here?
+
+    Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  // Kalman gain K;
+  MatrixXd K = Tc * S.inverse();
+
+  // residual
+  VectorXd z_diff = z - z_pred;
+  // TODO normalize angle z_diff(1) here?
+
+  //update state mean and covariance matrix
+  x_ = x_ + K * z_diff;
+  P_ = P_ - K*S*K.transpose();
+
+  // NIS Lidar Update
+  NIS_laser_ = z_diff.transpose() * S.inverse() * z_diff;
 }
 
 /**
@@ -466,6 +524,13 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
+}
 
+// Normalize angle in-place, make sure reference to actual location and not temporary storage
+void UKF:NormalizeAngle(double &phi) {
+  // alternative, suspect slower and less numerically stable, for small angle corrections at least
+  // phi = atan2(sin(phi), cos(phi));
 
+  while (phi >  M_PI) phi -= 2.*M_PI;
+  while (phi < -M_PI) phi += 2.*M_PI;
 }
