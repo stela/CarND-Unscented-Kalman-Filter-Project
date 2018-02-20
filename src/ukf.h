@@ -36,38 +36,59 @@ public:
   long long time_us_;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
-  double std_a_;
+  const double std_a_;
 
   ///* Process noise standard deviation yaw acceleration in rad/s^2
-  double std_yawdd_;
+  const double std_yawdd_;
 
   ///* Laser measurement noise standard deviation position1 in m
-  double std_laspx_;
+  const double std_laspx_;
 
   ///* Laser measurement noise standard deviation position2 in m
-  double std_laspy_;
+  const double std_laspy_;
 
   ///* Radar measurement noise standard deviation radius in m
-  double std_radr_;
+  const double std_radr_;
 
   ///* Radar measurement noise standard deviation angle in rad
-  double std_radphi_;
+  const double std_radphi_;
 
   ///* Radar measurement noise standard deviation radius change in m/s
-  double std_radrd_ ;
+  const double std_radrd_ ;
 
   ///* Weights of sigma points
-  VectorXd weights_;
+  const VectorXd weights_;
 
   ///* State dimension
-  int n_x_;
+  const int n_x_;
 
   ///* Augmented state dimension
-  int n_aug_;
+  const int n_aug_;
 
   ///* Sigma point spreading parameter
   double lambda_;
 
+private:
+  ///* Number of sigma points
+  const int n_sig_;
+
+  ///* Noise covariance matrix of radar measurements
+  MatrixXd R_radar_;
+
+  ///* Noise covariance matrix of lidar measurements
+  MatrixXd R_lidar_;
+
+  ///* NIS for radar
+  double NIS_radar_;
+
+  ///* NIS for lidar
+  double NIS_lidar_;
+
+
+
+
+
+public:
 
   /**
    * Constructor
@@ -110,6 +131,11 @@ private:
    * @param phi reference to angle to normalize
    */
   void NormalizeAngle(double &phi);
+
+  /**
+   * Creates weights of sigma points
+   */
+   VectorXd sigmaPointWeights();
 };
 
 #endif /* UKF_H */

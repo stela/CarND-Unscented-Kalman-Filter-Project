@@ -10,7 +10,7 @@ Tools::Tools() {
   max_rmse << 0,0,0,0;
 }
 
-Tools::~Tools() = default
+Tools::~Tools() = default;
 
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
