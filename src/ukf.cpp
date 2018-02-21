@@ -100,17 +100,18 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
 
   if (!is_initialized_) {
     // first measurement
-    x_ = VectorXd(4);
+    x_ = VectorXd(n_x_);
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-      double ro = measurement_pack.raw_measurements_(0);
-      double theta = measurement_pack.raw_measurements_(1);
-      double ro_dot = measurement_pack.raw_measurements_(2);
+      double rho = measurement_pack.raw_measurements_(0);     // distance
+      double theta = measurement_pack.raw_measurements_(1);   // bearing/angle
+      double rho_dot = measurement_pack.raw_measurements_(2); // radial velocity (delta-ro)
       long long ts = measurement_pack.timestamp_;
-      x_(0) = ro * cos(theta);
-      x_(1) = ro * sin(theta);
-      x_(2) = ro_dot * cos(theta);
-      x_(3) = ro_dot * sin(theta);
+      x_(0) = rho * cos(theta);  // x
+      x_(1) = rho * sin(theta);  // y
+      x_(2) = rho_dot;            // velocity
+      x_(3) = 0.0;  // yaw angle unknown
+      x_(4) = 0.0;  // yaw angle rate/velocity unknown
 
       cout << "UKF: first measurement is RADAR" << endl << x_ << endl;
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -124,10 +125,13 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
       // the RMSE will be very high for the first few measurements, but let's ignore those ;-)
       x_(0) = px;
       x_(1) = py;
-      x_(2) = 0.0;
-      x_(3) = 0.0;
+      x_(2) = 0.0; // radial velocity unknown
+      x_(3) = 0.0; // yaw angle unknown
+      x_(4) = 0.0; // yaw angle rate/velocity unknown
 
       cout << "UKF: first measurement is LASER" << endl << x_ << endl;
+    } else {
+      cout << "ERROR! Unexpected first measurement type: " << measurement_pack.sensor_type_ << endl;
     }
 
     // TODO assign to this.time_us_ ???
