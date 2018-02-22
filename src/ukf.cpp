@@ -5,6 +5,8 @@
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using Eigen::Array2d;
+using Eigen::Array3d;
 using std::vector;
 
 /**
@@ -44,17 +46,28 @@ UKF::UKF() :
     // Number of sigma points
     n_sig_(2 * n_aug_ + 1),
 
+    lambda_(3 - n_x_),
+
     // weights of sigma points
     weights_(sigmaPointWeights())
   {
-  // initial state vector
-  x_ = VectorXd(5);
+
+  // initial state vector, should be overwritten by first measurement
+  x_ = VectorXd(n_x_);
 
   // initial covariance matrix
-  P_ = MatrixXd(5, 5);
-  P_.setOnes();
+  P_ = MatrixXd(n_x_, n_x_);
+  P_.setIdentity();
 
+  Xsig_pred_ = MatrixXd::Zero(n_x_, n_sig_);
 
+  R_radar_ = MatrixXd::Zero(3, 3);
+  Array3d r_diag(std_radr_ * std_radr_, std_radphi_ * std_radphi_, std_radrd_ * std_radrd_);
+  R_radar_.diagonal() = r_diag;
+
+  R_lidar_ = MatrixXd::Zero(2, 2);
+  Array2d l_diag(std_laspx_ * std_laspx_, std_laspy_ * std_laspy_);
+  R_lidar_.diagonal() = l_diag;
 
   /**
   TODO:
@@ -67,13 +80,20 @@ UKF::UKF() :
 
 VectorXd UKF::sigmaPointWeights() {
   //create vector for weights
-  VectorXd weights = VectorXd(2*n_aug_+1);
+  // at this point, n_sig_, n_aug_ and n_x_ are all zero, strangely enough,
+  // so need to hardcode values here redundantly
+  // TODO move local constants to arguments, probably get passed through :)
+  int n_x = 5;
+  int n_aug = n_x + 2;
+  int n_sig = 2 * n_aug + 1;
+  VectorXd weights = VectorXd(n_sig);
+  int lambda = 3 - n_x;
 
   // set weights
-  double weight_0 = lambda_/(lambda_+n_aug_);
+  double weight_0 = lambda/(lambda+n_aug);
   weights(0) = weight_0;
-  for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
-    double weight = 0.5/(n_aug_+lambda_);
+  for (int i=1; i<n_sig; i++) {  //2 * n_aug + 1 weights
+    double weight = 0.5/(n_aug+lambda);
     weights(i) = weight;
   }
   return weights;
@@ -377,6 +397,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   }
 
   // add measurement noise covariance matrix
+  // TODO S is 2x2 (r x c) and R_lidar_ is 0x0!
   S = S + R_lidar_;
 
   // 2. Update state

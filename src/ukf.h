@@ -33,7 +33,7 @@ public:
 
   ///* time when the state is true, in us
   // Equivalent to previous_timestamp_ in the EKF project
-  long long time_us_;
+  long long time_us_ = 0;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
   const double std_a_;
