@@ -366,32 +366,27 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     //residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
-    // TODO normalize angle z_diff(1) here?
+    NormalizeAngle(z_diff(1));
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
 
   // add measurement noise covariance matrix
-  // TODO S is 2x2 (r x c) and R_lidar_ is 0x0!
   S = S + R_lidar_;
 
   // 2. Update state
-  // TODO move z decl down to first use
-  // Incoming radar measurement
-  VectorXd z = meas_package.raw_measurements_;
 
   // create matrix for cross correlation Tc
-  MatrixXd Tc = MatrixXd(n_x_, n_z);
-  Tc.fill(0.0);
-  for (int i = 0; i < n_sig_; i++) {  //2n+1 simga points
+  MatrixXd Tc = MatrixXd::Zero(n_x_, n_z);
+  for (int i = 0; i < n_sig_; i++) {  // 2n+1 sigma points
 
     // residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
-    // TODO normalize angle z_diff(1) here?
+    NormalizeAngle(z_diff(1));
 
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
-    // TODO normalize angle __x_diff(3)__ here?
+    NormalizeAngle(x_diff(3));
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
@@ -399,9 +394,11 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   // Kalman gain K;
   MatrixXd K = Tc * S.inverse();
 
+  // Incoming radar measurement
+  VectorXd z = meas_package.raw_measurements_;
   // residual
   VectorXd z_diff = z - z_pred;
-  // TODO normalize angle z_diff(1) here?
+  NormalizeAngle(z_diff(1));
 
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
