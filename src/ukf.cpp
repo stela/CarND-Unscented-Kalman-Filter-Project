@@ -16,11 +16,14 @@ using std::vector;
 UKF::UKF() :
     // Process noise standard deviation longitudinal acceleration in m/s^2
     // best found so far: RMSE x, y, vx, vy
-    // a=1.5, yawdd=0.5:  0.0702, 0.1001, 0.5097, 0.3078
-    std_a_(1.6),
+    // a=0.2,  yawdd=0.2: 0.0742, 0.1132, 0.5033, 0.3930
+    // a=0.23, yawdd=0.2: 0.0726, 0.1107, 0.5022, 0.3899
+    // a=1.5, yawdd=0.5:  0.0699, 0.0996, 0.5083, 0.3109
+
+    std_a_(1.5),
 
     // Process noise standard deviation yaw acceleration in rad/s^2
-    std_yawdd_(0.55),
+    std_yawdd_(0.5),
 
     //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
     // Laser measurement noise standard deviation position1 in m
@@ -209,17 +212,14 @@ void UKF::Prediction(double delta_t) {
   // Sigma point generator from "Lesson 7: 15. Generating Sigma Points Assignment 2",
   // then expanded upon in Lesson 7: 18. Augmentation Assignment 2"
 
-  //define spreading parameter
-  const double lambda = 3 - n_x_;
-
   //create augmented mean vector
-  VectorXd x_aug = VectorXd(7);
+  VectorXd x_aug = VectorXd(n_aug_);
 
   //create augmented state covariance
-  MatrixXd P_aug = MatrixXd(7, 7);
+  MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
 
   //create sigma point matrix
-  MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+  MatrixXd Xsig_aug = MatrixXd(n_aug_, n_sig_);
 
   //create augmented mean state
   x_aug.head(5) = x_;
@@ -228,7 +228,7 @@ void UKF::Prediction(double delta_t) {
 
   //create augmented covariance matrix
   P_aug.fill(0.0);
-  P_aug.topLeftCorner(5,5) = P_;
+  P_aug.topLeftCorner(n_x_, n_x_) = P_;
   P_aug(5,5) = std_a_ * std_a_;
   P_aug(6,6) = std_yawdd_ * std_yawdd_;
 
@@ -237,11 +237,11 @@ void UKF::Prediction(double delta_t) {
 
   //create augmented sigma points
   //set first column of sigma point matrix
-  Xsig_aug.col(0)  = x_aug;
+  Xsig_aug.col(0) = x_aug;
   for (int i = 0; i< n_aug_; i++)
   {
-    Xsig_aug.col(i+1)       = x_aug + sqrt(lambda+n_aug_) * L.col(i);
-    Xsig_aug.col(i+1+n_aug_) = x_aug - sqrt(lambda+n_aug_) * L.col(i);
+    Xsig_aug.col(i+1)        = x_aug + sqrt(lambda_+n_aug_) * L.col(i);
+    Xsig_aug.col(i+1+n_aug_) = x_aug - sqrt(lambda_+n_aug_) * L.col(i);
   }
 
   //
@@ -249,8 +249,6 @@ void UKF::Prediction(double delta_t) {
   //
 
   // From "Lesson 7: 21. Sigma Point Prediction Assignment 2":
-  //create matrix with predicted sigma points as columns
-  MatrixXd Xsig_pred = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   //predict sigma points
 
@@ -291,11 +289,11 @@ void UKF::Prediction(double delta_t) {
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    Xsig_pred(0,i) = px_p;
-    Xsig_pred(1,i) = py_p;
-    Xsig_pred(2,i) = v_p;
-    Xsig_pred(3,i) = yaw_p;
-    Xsig_pred(4,i) = yawd_p;
+    Xsig_pred_(0,i) = px_p;
+    Xsig_pred_(1,i) = py_p;
+    Xsig_pred_(2,i) = v_p;
+    Xsig_pred_(3,i) = yaw_p;
+    Xsig_pred_(4,i) = yawd_p;
   }
 
 
@@ -305,51 +303,26 @@ void UKF::Prediction(double delta_t) {
 
   // From "Lesson 7: 24. Predicted mean and covariance assignment 2"
 
-  //create vector for predicted state
-  VectorXd x = VectorXd(n_x_);
-
-  //create covariance matrix for prediction
-  MatrixXd P = MatrixXd(n_x_, n_x_);
-
-  //create vector for weights
-  VectorXd weights = VectorXd(2*n_aug_+1);
-
-  // set weights
-  double weight_0 = lambda/(lambda+n_aug_);
-  weights(0) = weight_0;
-  for (int i=1; i<2*n_aug_+1; i++) {  //2n+1 weights
-    double weight = 0.5/(n_aug_+lambda);
-    weights(i) = weight;
-  }
-
   //predicted state mean
-  x.fill(0.0);
+  x_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
-    x = x+ weights(i) * Xsig_pred.col(i);
+    x_ = x_+ weights_(i) * Xsig_pred_.col(i);
   }
 
   //predicted state covariance matrix
-  P.fill(0.0);
+  P_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = Xsig_pred.col(i) - x;
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
     //angle normalization
+    // TODO reuse angle normalization function
     while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
     while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
 
     // TODO change to P += to avoid IDE warning
-    P = P + weights(i) * x_diff * x_diff.transpose() ;
+    P_ = P_ + weights_(i) * x_diff * x_diff.transpose() ;
   }
-
-  //
-  // ASSIGN OUTPUTS
-  //
-
-  // TODO add missing field updates
-  Xsig_pred_ = Xsig_pred;
-  x_ = x;
-  P_ = P;
 }
 
 
