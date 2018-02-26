@@ -15,10 +15,12 @@ using std::vector;
  */
 UKF::UKF() :
     // Process noise standard deviation longitudinal acceleration in m/s^2
-    std_a_(30),
+    // best found so far: RMSE x, y, vx, vy
+    // a=1.5, yawdd=0.5:  0.0702, 0.1001, 0.5097, 0.3078
+    std_a_(1.6),
 
     // Process noise standard deviation yaw acceleration in rad/s^2
-    std_yawdd_(30),
+    std_yawdd_(0.55),
 
     //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
     // Laser measurement noise standard deviation position1 in m
@@ -52,12 +54,12 @@ UKF::UKF() :
     weights_(sigmaPointWeights())
   {
 
+
   // initial state vector, should be overwritten by first measurement
   x_ = VectorXd(n_x_);
 
   // initial covariance matrix
-  P_ = MatrixXd(n_x_, n_x_);
-  P_.setIdentity();
+  P_ = MatrixXd::Identity(n_x_, n_x_);
 
   Xsig_pred_ = MatrixXd::Zero(n_x_, n_sig_);
 
@@ -87,7 +89,7 @@ VectorXd UKF::sigmaPointWeights() {
   int n_aug = n_x + 2;
   int n_sig = 2 * n_aug + 1;
   VectorXd weights = VectorXd(n_sig);
-  int lambda = 3 - n_x;
+  double lambda = 3 - n_x;
 
   // set weights
   double weight_0 = lambda/(lambda+n_aug);

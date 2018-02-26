@@ -23,6 +23,7 @@ public:
   const bool use_radar_ = true;
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
+  // uses the Constant Turn Rat and Velocity Magnitude Model (CTRV) model for state
   VectorXd x_;
 
   ///* state covariance matrix
