@@ -16,9 +16,9 @@ using std::vector;
 UKF::UKF() :
     // Process noise standard deviation longitudinal acceleration in m/s^2
     // best found so far: RMSE x, y, vx, vy
-    // a=0.2,  yawdd=0.2: 0.0742, 0.1132, 0.5033, 0.3930
-    // a=0.23, yawdd=0.2: 0.0726, 0.1107, 0.5022, 0.3899
-    // a=1.5, yawdd=0.5:  0.0699, 0.0996, 0.5083, 0.3109
+    // a=0.2,  yawdd=0.2:
+    // a=0.23, yawdd=0.2:
+    // a=1.5, yawdd=0.5:  0.0692, 0.0829, 0.3333, 0.2345
 
     std_a_(1.5),
 
@@ -431,15 +431,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //set measurement dimension, radar can measure r, phi, and r_dot
   const int n_z = 3;
 
-  //radar measurement noise standard deviation radius in m
-  const double std_radr = 0.3;
-
-  //radar measurement noise standard deviation angle in rad
-  const double std_radphi = 0.0175;
-
-  //radar measurement noise standard deviation radius change in m/s
-  const double std_radrd = 0.1;
-
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
@@ -462,31 +453,26 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   }
 
   //mean predicted measurement
-  VectorXd z_pred = VectorXd(n_z);
-  z_pred.fill(0.0);
+  VectorXd z_pred = VectorXd::Zero(n_z);
   for (int i=0; i < 2*n_aug_+1; i++) {
     z_pred = z_pred + weights_(i) * Zsig.col(i);
   }
 
   //innovation covariance matrix S
-  MatrixXd S = MatrixXd(n_z,n_z);
-  S.fill(0.0);
-  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 sigma points
+  MatrixXd S = MatrixXd::Zero(n_z,n_z);
+  for (int i = 0; i < n_sig_; i++) {  //2n+1 sigma points
     //residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
-
-    //angle normalization
-    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+    NormalizeAngle(z_diff(1));
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
 
   //add measurement noise covariance matrix
   MatrixXd R = MatrixXd(n_z,n_z);
-  R <<    std_radr*std_radr, 0, 0,
-      0, std_radphi*std_radphi, 0,
-      0, 0,std_radrd*std_radrd;
+  R <<    std_radr_*std_radr_, 0, 0,
+      0, std_radphi_*std_radphi_, 0,
+      0, 0,std_radrd_*std_radrd_;
   S = S + R;
 
 
