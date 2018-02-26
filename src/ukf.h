@@ -58,7 +58,7 @@ public:
   const double std_radrd_ ;
 
   ///* Weights of sigma points
-  const VectorXd weights_;
+  VectorXd weights_;
 
   ///* State dimension
   const int n_x_;
@@ -136,7 +136,7 @@ private:
   /**
    * Creates weights of sigma points
    */
-   VectorXd sigmaPointWeights();
+   VectorXd sigmaPointWeights(const int n_x, const int n_aug, const int n_sig, const double lambda) const;
 };
 
 #endif /* UKF_H */
