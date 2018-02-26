@@ -144,7 +144,7 @@ void UKF::ProcessMeasurement(MeasurementPackage measurement_pack) {
 
 
   //
-  // Control structure similar to EKF project
+  // Control structure similar to EKF project - Predict then Update
   //
 
   // Prediction
